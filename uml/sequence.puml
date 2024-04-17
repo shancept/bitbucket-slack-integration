@@ -1,0 +1,30 @@
+@startuml
+actor Developer
+participant Bitbucket
+participant "BitbucketWebhookListener" as WebhookListener
+participant "ChannelNotifier" as ChannelService
+participant Queue
+participant "SlackIntegration" as SlackIntegration
+participant "SDK Slack" as SlackClient
+participant Slack
+database "Data Storage" as Storage
+
+Developer -> Bitbucket: Создает PR
+Bitbucket -> WebhookListener: Событие нового PR
+WebhookListener -> ChannelService: Оповещение о новом PR
+ChannelService -> Storage: Проверить наличие канала
+Storage --> ChannelService: Нет канала
+ChannelService -> Queue: Отправить событие на создание канала
+SlackIntegration --> Queue: Обработать сообщение о создании канала
+SlackIntegration -> SlackClient: Создать канал
+SlackClient -> Slack: Запрос на создание канала
+Slack -> SlackClient: Канал создан
+SlackClient -> SlackIntegration: Канал создан
+SlackClient -> Queue: Сообщение с ID канала и ID PR
+ChannelService --> Queue: Обработка сообщения о создании канала
+ChannelService -> Storage: Сохранить ID канала
+ChannelService -> Queue: Отправить событие об уведомление о новом PR
+SlackClient --> Queue: Обработка события
+SlackClient -> Slack: Уведомление о новом PR
+Slack -> SlackClient: Уведомление отправлено
+@enduml
